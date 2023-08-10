@@ -1,0 +1,452 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "学生信息管理系统.",
+    "title": "Management System API.",
+    "version": "1.0.0"
+  },
+  "host": "192.168.124.2:7890",
+  "basePath": "/v1",
+  "paths": {
+    "/admin": {
+      "put": {
+        "security": [
+          {
+            "bearer": [
+              "[]"
+            ]
+          }
+        ],
+        "description": "管理员修改个人信息接口",
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "updateAdmin",
+        "parameters": [
+          {
+            "description": "修改密码需要提供旧密码",
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/UpdateInfoRequest"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "description": "学生, 管理员登录接口",
+        "tags": [
+          "Public"
+        ],
+        "operationId": "login",
+        "parameters": [
+          {
+            "description": "登录需要提供 用户名(学生ID / 管理员账户名) + 密码 + 角色(student / admin)",
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/LoginRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/tokenResponse"
+          },
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "security": [
+          {
+            "bearer": [
+              "[]"
+            ]
+          }
+        ],
+        "description": "获取学生信息接口",
+        "tags": [
+          "Users"
+        ],
+        "operationId": "getUser",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/getUserListResponse"
+          },
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      },
+      "put": {
+        "security": [
+          {
+            "bearer": [
+              "[]"
+            ]
+          }
+        ],
+        "description": "学生修改个人信息接口",
+        "tags": [
+          "Users"
+        ],
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "description": "修改姓名不需要提供密码, 修改密码需要提供旧密码",
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/UpdateInfoRequest"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      },
+      "post": {
+        "description": "学生注册接口",
+        "tags": [
+          "Public"
+        ],
+        "operationId": "register",
+        "parameters": [
+          {
+            "description": "注册需要提供 姓名 + 密码 + 年级 + 学生ID",
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/RegisterRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/tokenResponse"
+          },
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "bearer": [
+              "[]"
+            ]
+          }
+        ],
+        "description": "删除学生账户接口",
+        "tags": [
+          "Users"
+        ],
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "description": "学生删除自己账户需要提供密码, 管理员删除学生账户不需要提供密码",
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/DeleteRequest"
+            }
+          },
+          {
+            "type": "integer",
+            "description": "学生ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "security": [
+          {
+            "bearer": [
+              "[]"
+            ]
+          }
+        ],
+        "description": "获取学生信息接口",
+        "tags": [
+          "Users"
+        ],
+        "operationId": "getUser",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "学生ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/getUserListResponse"
+          },
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "bearer": [
+              "[]"
+            ]
+          }
+        ],
+        "description": "删除学生账户接口",
+        "tags": [
+          "Users"
+        ],
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "description": "学生删除自己账户需要提供密码, 管理员删除学生账户不需要提供密码",
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/DeleteRequest"
+            }
+          },
+          {
+            "type": "integer",
+            "description": "学生ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "DeleteRequest": {
+      "type": "object",
+      "properties": {
+        "password": {
+          "type": "string",
+          "x-go-name": "Password"
+        }
+      },
+      "x-go-package": "github.com/Godzizizilla/Management-System/models"
+    },
+    "GetUserListResponse": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "success": {
+          "type": "boolean",
+          "x-go-name": "Success"
+        },
+        "user_list": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/User"
+          },
+          "x-go-name": "UserList"
+        }
+      },
+      "x-go-package": "github.com/Godzizizilla/Management-System/models"
+    },
+    "GetUserResponse": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "success": {
+          "type": "boolean",
+          "x-go-name": "Success"
+        },
+        "user": {
+          "$ref": "#/definitions/User"
+        }
+      },
+      "x-go-package": "github.com/Godzizizilla/Management-System/models"
+    },
+    "LoginRequest": {
+      "type": "object",
+      "properties": {
+        "password": {
+          "type": "string",
+          "x-go-name": "Password"
+        },
+        "role": {
+          "type": "string",
+          "x-go-name": "Role"
+        },
+        "username": {
+          "type": "string",
+          "x-go-name": "Username"
+        }
+      },
+      "x-go-package": "github.com/Godzizizilla/Management-System/models"
+    },
+    "RegisterRequest": {
+      "type": "object",
+      "properties": {
+        "grade": {
+          "type": "string",
+          "x-go-name": "Grade"
+        },
+        "password": {
+          "type": "string",
+          "x-go-name": "Password"
+        },
+        "student_id": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "StudentID"
+        },
+        "user_name": {
+          "type": "string",
+          "x-go-name": "UserName"
+        }
+      },
+      "x-go-package": "github.com/Godzizizilla/Management-System/models"
+    },
+    "Response": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "success": {
+          "type": "boolean",
+          "x-go-name": "Success"
+        }
+      },
+      "x-go-package": "github.com/Godzizizilla/Management-System/models"
+    },
+    "TokenResponse": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "success": {
+          "type": "boolean",
+          "x-go-name": "Success"
+        },
+        "token": {
+          "type": "string",
+          "x-go-name": "Token"
+        }
+      },
+      "x-go-package": "github.com/Godzizizilla/Management-System/models"
+    },
+    "UpdateInfoRequest": {
+      "type": "object",
+      "properties": {
+        "new_name": {
+          "type": "string",
+          "x-go-name": "NewName"
+        },
+        "new_password": {
+          "type": "string",
+          "x-go-name": "NewPassword"
+        },
+        "old_password": {
+          "type": "string",
+          "x-go-name": "OldPassword"
+        }
+      },
+      "x-go-package": "github.com/Godzizizilla/Management-System/models"
+    },
+    "User": {
+      "type": "object",
+      "properties": {
+        "Grade": {
+          "type": "string"
+        },
+        "Name": {
+          "type": "string"
+        },
+        "StudentID": {
+          "type": "integer",
+          "format": "uint64"
+        }
+      },
+      "x-go-package": "github.com/Godzizizilla/Management-System/models"
+    }
+  },
+  "responses": {
+    "getUserListResponse": {
+      "description": "获取学生列表返回的Response",
+      "schema": {
+        "$ref": "#/definitions/GetUserListResponse"
+      }
+    },
+    "getUserResponse": {
+      "description": "获取学生信息返回的Response",
+      "schema": {
+        "$ref": "#/definitions/GetUserResponse"
+      }
+    },
+    "response": {
+      "description": "默认返回的的Response",
+      "schema": {
+        "$ref": "#/definitions/Response"
+      }
+    },
+    "tokenResponse": {
+      "description": "注册, 登录, 修改密码将返回包含token的Response",
+      "schema": {
+        "$ref": "#/definitions/TokenResponse"
+      }
+    }
+  },
+  "securityDefinitions": {
+    "bearer": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    }
+  }
+}
