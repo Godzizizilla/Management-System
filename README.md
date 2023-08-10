@@ -20,8 +20,9 @@
 - 通过命令行添加, 数据库中存在管理员->跳过, 不存在->提示添加
 
 ## Header带Authorization的请求如何实现跨域访问
-1. Origin不能是localhost
-2. AllowHeaders包含Authorization (cors.Default()的AllowHeaders为空)
+~~1. Origin不能是localhost~~
+~~2. AllowHeaders包含Authorization (cors.Default()的AllowHeaders为空)~~
+玄学!
 
 ## TODO
 1. 数据库配置, Redis配置

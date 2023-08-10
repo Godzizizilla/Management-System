@@ -14,7 +14,7 @@
     "title": "Management System API.",
     "version": "1.0.0"
   },
-  "host": "192.168.124.2:7890",
+  "host": "localhost:7890",
   "basePath": "/v1",
   "paths": {
     "/admin": {

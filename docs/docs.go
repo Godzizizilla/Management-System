@@ -4,7 +4,7 @@
 //
 // Version: 1.0.0
 // Schemes: http
-// Host: 192.168.124.2:7890
+// Host: localhost:7890
 // BasePath: /v1
 //
 // Consumes:

@@ -8,9 +8,12 @@ import (
 
 func SetupRouters(router *gin.Engine) {
 	cfg := cors.Config{
-		AllowAllOrigins:  true,
+		//AllowAllOrigins:  true,
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTION"},
-		AllowHeaders:     []string{"Authorization"},
+		AllowHeaders:     []string{"Authorization", "Origin", "Content-Type"},
 		AllowCredentials: true,
 	}
 	router.Use(cors.New(cfg))
