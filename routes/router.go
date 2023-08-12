@@ -2,25 +2,14 @@ package routes
 
 import (
 	"github.com/Godzizizilla/Management-System/handlers"
-	"github.com/gin-contrib/cors"
+	"github.com/Godzizizilla/Management-System/middlewares"
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRouters(router *gin.Engine) {
-	cfg := cors.Config{
-		//AllowAllOrigins:  true,
-		AllowOriginFunc: func(origin string) bool {
-			return true
-		},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTION"},
-		AllowHeaders:     []string{"Authorization", "Origin", "Content-Type"},
-		AllowCredentials: true,
-	}
-	router.Use(cors.New(cfg))
-
 	apiPublic := router.Group("/v1")
 	apiProtected := router.Group("/v1")
-	apiProtected.Use(JWTMiddleware)
+	apiProtected.Use(middlewares.JWTMiddleware)
 
 	// public api
 	apiPublic.POST("/login", handlers.Login)
