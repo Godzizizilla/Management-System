@@ -27,8 +27,10 @@ func Login(c *gin.Context) {
 		studentID, _ := strconv.Atoi(request.Username)
 		var user *models.User
 		user, err = db.FindUserByStudentID(uint(studentID))
-		id = user.StudentID
-		comparativePassword = user.Password
+		if err == nil {
+			id = user.StudentID
+			comparativePassword = user.Password
+		}
 	} else if request.Role == "admin" {
 		var admin *models.Admin
 		admin, err = db.FindAdminByName(request.Username)
