@@ -10,6 +10,7 @@ go mid tidy
 ```
 
 ### 2. 配置`config.yml`
+配置文件在./config/config.yml
 
 ### 3. 添加环境变量`JWT_SECRET_KEY`
 ```shell
