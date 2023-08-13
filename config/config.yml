@@ -14,5 +14,5 @@ redis:
   password:
 
 swagger:
-  openUI: false
+  openUI: true
   filePath: ./docs/swagger.json
