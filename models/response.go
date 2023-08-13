@@ -7,12 +7,20 @@ type Response struct {
 
 type TokenResponse struct {
 	Response
+	Role  string `json:"role,omitempty"`
 	Token string `json:"token"`
 }
 
 type GetUserResponse struct {
 	Response
-	User User `json:"user,omitempty"`
+	Role string `json:"role,omitempty"`
+	User User   `json:"user,omitempty"`
+}
+
+type GetAdminResponse struct {
+	Response
+	Role  string `json:"role,omitempty"`
+	Admin Admin  `json:"user,omitempty"`
 }
 
 type GetUserListResponse struct {

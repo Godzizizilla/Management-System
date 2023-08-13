@@ -3,16 +3,24 @@ package db
 import (
 	"errors"
 	"fmt"
+	"github.com/Godzizizilla/Management-System/config"
 	"github.com/Godzizizilla/Management-System/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"strconv"
 	"strings"
 )
 
 var DB *gorm.DB
 
 func SetupDB() {
-	dsn := "host=localhost user=postgres password=postgres2023 dbname=management_system port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
+		config.C.Database.Host,
+		config.C.Database.User,
+		config.C.Database.Password,
+		config.C.Database.DBName,
+		config.C.Database.Port,
+	)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
@@ -23,7 +31,8 @@ func SetupDB() {
 	db.AutoMigrate(&models.User{}, &models.Admin{})
 }
 
-func FindUserByStudentID(studentID uint) (*models.User, error) {
+func FindUserByStudentID(idStr string) (*models.User, error) {
+	studentID, _ := strconv.Atoi(idStr)
 	var user models.User
 	if err := DB.Where("student_id = ?", studentID).First(&user).Error; err != nil {
 		return nil, err
@@ -45,13 +54,13 @@ func FindAdminByName(name string) (*models.Admin, error) {
 	return &admin, nil
 }
 
-func FindAdminByID(id uint) (*models.Admin, error) {
+/*func FindAdminByID(id uint) (*models.Admin, error) {
 	var admin models.Admin
 	if err := DB.Where("id = ?", id).First(&admin).Error; err != nil {
 		return nil, err
 	}
 	return &admin, nil
-}
+}*/
 
 func AddUser(user *models.User) error {
 	if err := DB.Create(user).Error; err != nil {
@@ -77,10 +86,14 @@ func UpdateAdmin(admin *models.Admin) error {
 	return nil
 }
 
-func DeleteUserByStudentId(studentId uint) error {
-	fmt.Println(studentId)
-	if err := DB.Unscoped().Where("student_id = ?", studentId).Delete(&models.User{}).Error; err != nil {
-		return err
+func DeleteUserByStudentId(idStr string) error {
+	studentID, _ := strconv.Atoi(idStr)
+	result := DB.Where("student_id = ?", studentID).Delete(&models.User{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("不存在该用户")
 	}
 	return nil
 }

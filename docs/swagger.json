@@ -14,40 +14,9 @@
     "title": "Management System API.",
     "version": "1.0.0"
   },
-  "host": "192.168.124.2:7890",
+  "host": "localhost:7890",
   "basePath": "/v1",
   "paths": {
-    "/admin": {
-      "put": {
-        "security": [
-          {
-            "bearer": [
-              "[]"
-            ]
-          }
-        ],
-        "description": "管理员修改个人信息接口",
-        "tags": [
-          "Admin"
-        ],
-        "operationId": "updateAdmin",
-        "parameters": [
-          {
-            "description": "修改密码需要提供旧密码",
-            "name": "Body",
-            "in": "body",
-            "schema": {
-              "$ref": "#/definitions/UpdateInfoRequest"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "$ref": "#/responses/response"
-          }
-        }
-      }
-    },
     "/login": {
       "post": {
         "description": "学生, 管理员登录接口",
@@ -57,7 +26,7 @@
         "operationId": "login",
         "parameters": [
           {
-            "description": "登录需要提供 用户名(学生ID / 管理员账户名) + 密码 + 角色(student / admin)",
+            "description": "登录需要提供 用户名(学生ID / 管理员账户名) + 密码",
             "name": "Body",
             "in": "body",
             "schema": {
@@ -76,37 +45,15 @@
       }
     },
     "/users": {
-      "get": {
-        "security": [
-          {
-            "bearer": [
-              "[]"
-            ]
-          }
-        ],
-        "description": "获取学生信息接口",
-        "tags": [
-          "Users"
-        ],
-        "operationId": "getUser",
-        "responses": {
-          "200": {
-            "$ref": "#/responses/getUserListResponse"
-          },
-          "default": {
-            "$ref": "#/responses/response"
-          }
-        }
-      },
       "put": {
         "security": [
           {
-            "bearer": [
+            "Bearer": [
               "[]"
             ]
           }
         ],
-        "description": "学生修改个人信息接口",
+        "description": "用户修改个人信息接口",
         "tags": [
           "Users"
         ],
@@ -151,62 +98,26 @@
             "$ref": "#/responses/response"
           }
         }
-      },
-      "delete": {
-        "security": [
-          {
-            "bearer": [
-              "[]"
-            ]
-          }
-        ],
-        "description": "删除学生账户接口",
-        "tags": [
-          "Users"
-        ],
-        "operationId": "deleteUser",
-        "parameters": [
-          {
-            "description": "学生删除自己账户需要提供密码, 管理员删除学生账户不需要提供密码",
-            "name": "Body",
-            "in": "body",
-            "schema": {
-              "$ref": "#/definitions/DeleteRequest"
-            }
-          },
-          {
-            "type": "integer",
-            "description": "学生ID",
-            "name": "id",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "default": {
-            "$ref": "#/responses/response"
-          }
-        }
       }
     },
     "/users/{id}": {
       "get": {
         "security": [
           {
-            "bearer": [
+            "Bearer": [
               "[]"
             ]
           }
         ],
-        "description": "获取学生信息接口",
+        "description": "获取学生/管理员信息接口",
         "tags": [
           "Users"
         ],
         "operationId": "getUser",
         "parameters": [
           {
-            "type": "integer",
-            "description": "学生ID",
+            "type": "string",
+            "description": "me: 获取当前用户信息, all: 获取所有学生信息, {student_id}: 获取指定学生信息",
             "name": "id",
             "in": "path",
             "required": true
@@ -224,7 +135,7 @@
       "delete": {
         "security": [
           {
-            "bearer": [
+            "Bearer": [
               "[]"
             ]
           }
@@ -244,8 +155,8 @@
             }
           },
           {
-            "type": "integer",
-            "description": "学生ID",
+            "type": "string",
+            "description": "me/学生ID",
             "name": "id",
             "in": "path",
             "required": true
@@ -260,12 +171,51 @@
     }
   },
   "definitions": {
+    "Admin": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "x-go-name": "Email"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "phone": {
+          "type": "string",
+          "x-go-name": "Phone"
+        }
+      },
+      "x-go-package": "github.com/Godzizizilla/Management-System/models"
+    },
     "DeleteRequest": {
       "type": "object",
       "properties": {
         "password": {
           "type": "string",
           "x-go-name": "Password"
+        }
+      },
+      "x-go-package": "github.com/Godzizizilla/Management-System/models"
+    },
+    "GetAdminResponse": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "role": {
+          "type": "string",
+          "x-go-name": "Role"
+        },
+        "success": {
+          "type": "boolean",
+          "x-go-name": "Success"
+        },
+        "user": {
+          "$ref": "#/definitions/Admin"
         }
       },
       "x-go-package": "github.com/Godzizizilla/Management-System/models"
@@ -298,6 +248,10 @@
           "type": "string",
           "x-go-name": "Message"
         },
+        "role": {
+          "type": "string",
+          "x-go-name": "Role"
+        },
         "success": {
           "type": "boolean",
           "x-go-name": "Success"
@@ -314,10 +268,6 @@
         "password": {
           "type": "string",
           "x-go-name": "Password"
-        },
-        "role": {
-          "type": "string",
-          "x-go-name": "Role"
         },
         "username": {
           "type": "string",
@@ -344,7 +294,7 @@
         },
         "user_name": {
           "type": "string",
-          "x-go-name": "UserName"
+          "x-go-name": "Username"
         }
       },
       "x-go-package": "github.com/Godzizizilla/Management-System/models"
@@ -369,6 +319,10 @@
         "message": {
           "type": "string",
           "x-go-name": "Message"
+        },
+        "role": {
+          "type": "string",
+          "x-go-name": "Role"
         },
         "success": {
           "type": "boolean",
@@ -417,6 +371,12 @@
     }
   },
   "responses": {
+    "getAdminResponse": {
+      "description": "获取管理员信息返回的Response",
+      "schema": {
+        "$ref": "#/definitions/GetAdminResponse"
+      }
+    },
     "getUserListResponse": {
       "description": "获取学生列表返回的Response",
       "schema": {
@@ -443,7 +403,7 @@
     }
   },
   "securityDefinitions": {
-    "bearer": {
+    "Bearer": {
       "type": "apiKey",
       "name": "Authorization",
       "in": "header"

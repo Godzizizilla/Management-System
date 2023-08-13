@@ -1,9 +1,8 @@
-package config
+package db
 
 import (
 	"errors"
 	"fmt"
-	"github.com/Godzizizilla/Management-System/db"
 	"github.com/Godzizizilla/Management-System/models"
 	"golang.org/x/crypto/ssh/terminal"
 	"gorm.io/gorm"
@@ -12,7 +11,7 @@ import (
 
 func InitAdmin() {
 	var admin models.Admin
-	if err := db.DB.First(&admin).Error; err != nil {
+	if err := DB.First(&admin).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// 没有找到任何管理员记录
 			fmt.Println("[Init]: 未设置管理员账户!")
@@ -39,7 +38,15 @@ func InitAdmin() {
 	}
 	admin.Password = string(bytePassword)
 
-	if err := db.DB.Create(&admin).Error; err != nil {
+	// 获取电话
+	fmt.Print("\n请输入电话: ")
+	fmt.Scan(&admin.Phone)
+
+	// 获取邮箱
+	fmt.Print("请输入邮箱: ")
+	fmt.Scan(&admin.Email)
+
+	if err := DB.Create(&admin).Error; err != nil {
 		fmt.Println("\n[Init]: 设置管理员账户失败")
 	} else {
 		fmt.Println("\n[Init]: 设置管理员账户成功")

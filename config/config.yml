@@ -1,0 +1,18 @@
+server:
+  host: localhost
+  port: 7890
+
+database:
+  host: localhost
+  port: 5432
+  user: xxx
+  password: xxx
+  dbname: management_system
+
+redis:
+  address: localhost:6379
+  password:
+
+swagger:
+  openUI: false
+  filePath: ./docs/swagger.json

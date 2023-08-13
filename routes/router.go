@@ -13,15 +13,10 @@ func SetupRouters(router *gin.Engine) {
 
 	// public api
 	apiPublic.POST("/login", handlers.Login)
-	apiPublic.POST("/users", handlers.CreateUser)
+	apiPublic.POST("/users", handlers.Register)
 
 	// users api
-	apiProtected.PUT("/users", handlers.UpdateUser)
-	apiProtected.DELETE("/users", handlers.DeleteUser)
-	apiProtected.GET("/users", handlers.GetUser)
-	apiProtected.DELETE("/users/:id", handlers.DeleteUser)
-	apiProtected.GET("/users/:id", handlers.GetUser)
-
-	// admin api
-	apiProtected.PUT("/admin", handlers.UpdateAdmin)
+	apiProtected.PUT("/users", handlers.Update)
+	apiProtected.DELETE("/users/:id", handlers.Delete)
+	apiProtected.GET("/users/:id", handlers.Get)
 }

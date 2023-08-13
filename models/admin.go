@@ -7,10 +7,12 @@ import (
 )
 
 type Admin struct {
-	ID        uint   `gorm:"primary_key"`
-	Name      string `gorm:"not null"`
-	Password  string
-	CreatedAt time.Time `gorm:"type:timestamptz"`
+	ID        uint      `json:"-" gorm:"primary_key"`
+	Name      string    `json:"name" gorm:"not null"`
+	Password  string    `json:"-"`
+	Email     string    `json:"email"`
+	Phone     string    `json:"phone"`
+	CreatedAt time.Time `json:"-" gorm:"type:timestamptz"`
 }
 
 func (a *Admin) BeforeCreate(tx *gorm.DB) (err error) {

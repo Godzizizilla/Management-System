@@ -1,8 +1,11 @@
 package handlers
 
+/*
 import (
+	"context"
 	"errors"
 	"github.com/Godzizizilla/Management-System/db"
+	"github.com/Godzizizilla/Management-System/middlewares"
 	"github.com/Godzizizilla/Management-System/models"
 	"github.com/Godzizizilla/Management-System/utils"
 	"github.com/gin-gonic/gin"
@@ -10,66 +13,86 @@ import (
 	"gorm.io/gorm"
 	"net/http"
 	"strconv"
+	"time"
 )
 
-func Login(c *gin.Context) {
+func Login2(c *gin.Context) {
 	var request models.LoginRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, models.Response{Success: false})
+		c.JSON(http.StatusBadRequest, models.Response{Success: false, Message: "请提供用户名及密码"})
 		return
 	}
 
-	var id uint
+	var role string
 	var comparativePassword string
 	var err error
+	var user *models.User
 
-	if request.Role == "student" {
-		studentID, _ := strconv.Atoi(request.Username)
-		var user *models.User
-		user, err = db.FindUserByStudentID(uint(studentID))
-		if err == nil {
-			id = user.StudentID
-			comparativePassword = user.Password
-		}
-	} else if request.Role == "admin" {
-		var admin *models.Admin
-		admin, err = db.FindAdminByName(request.Username)
-		id = admin.ID
-		comparativePassword = admin.Password
+	// 首先查询users表
+	studentID, _ := strconv.Atoi(request.Username)
+	if studentID == 0 {
+		err = gorm.ErrRecordNotFound
 	} else {
-		c.JSON(http.StatusBadRequest, models.Response{
-			Success: false,
-			Message: "",
-		})
-		return
+		user, err = db.FindUserByStudentID(uint(studentID))
 	}
 
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// 用户不存在
-			c.JSON(http.StatusNotFound, models.Response{Success: false})
-			return
-		} else {
-			// 数据库错误
+	// 存在该用户
+	if err == nil {
+		role = "student"
+		comparativePassword = user.Password
+	} else {
+		// 数据库错误
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusInternalServerError, models.Response{Success: false})
 			return
 		}
+
+		// 不存在该用户, 再查询admins表
+		admin, err := db.FindAdminByName(request.Username)
+		// 存在该管理员
+		if err == nil {
+			role = "admin"
+			comparativePassword = admin.Password
+		} else {
+			// 数据库错误
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusInternalServerError, models.Response{Success: false})
+				return
+			}
+			// 不存在该管理员
+			c.JSON(http.StatusUnauthorized, models.Response{Success: false, Message: "用户名或密码错误"})
+			return
+		}
 	}
-	// 用户存在
+
+	// 验证密码
 	if err := bcrypt.CompareHashAndPassword([]byte(comparativePassword), []byte(request.Password)); err != nil {
 		// 密码错误
 		c.JSON(http.StatusUnauthorized, models.Response{
 			Success: false,
-			Message: "密码错误",
+			Message: "用户名或密码错误",
 		})
 		return
 	}
-	// 登录成功
-	token, _, _ := utils.GenerateToken(id, request.Role)
+	// 密码正确, 生成token
+	token, jti, _ := utils.GenerateToken(request.Username, role)
+	// 确保jti不重复
+	for {
+		// 没有记录, 返回err, 说明不重复
+		if _, err := middlewares.RC.Get(context.TODO(), jti).Result(); err != nil {
+			break
+		}
+		token, jti, _ = utils.GenerateToken(request.Username, role)
+	}
+
 	c.JSON(http.StatusOK, models.TokenResponse{
-		Response: models.Response{Success: true},
+		Response: models.Response{Success: true, Message: "登录成功"},
 		Token:    token,
+		Role:     role,
 	})
+
+	// 添加{key: jti, val: role}到redis
+	middlewares.RC.Set(context.TODO(), jti, role, 7*24*time.Hour).Result()
 }
 
 func CreateUser(c *gin.Context) {
@@ -80,7 +103,7 @@ func CreateUser(c *gin.Context) {
 	}
 
 	// 简单验证数据是否合法
-	if request.StudentID == 0 || request.UserName == "" || request.Password == "" || request.Grade == "" {
+	if request.StudentID == 0 || request.Username == "" || request.Password == "" || request.Grade == "" {
 		c.JSON(http.StatusBadRequest, models.Response{
 			Success: false,
 		})
@@ -88,7 +111,7 @@ func CreateUser(c *gin.Context) {
 	}
 
 	var user = models.User{
-		Name:      request.UserName,
+		Name:      request.Username,
 		StudentID: request.StudentID,
 		Grade:     request.Grade,
 		Password:  request.Password,
@@ -109,19 +132,30 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	// 注册成功
-	token, _, _ := utils.GenerateToken(request.StudentID, "student")
+	// 注册成功, 生成token
+	token, jti, _ := utils.GenerateToken(request.Username, "student")
+	// 确保jti不重复
+	for {
+		if _, err := middlewares.RC.Get(context.TODO(), jti).Result(); err != nil {
+			break
+		}
+		token, jti, _ = utils.GenerateToken(request.Username, "student")
+	}
+
 	c.JSON(http.StatusOK, models.TokenResponse{
-		Response: models.Response{Success: true},
+		Response: models.Response{Success: true, Message: "注册成功"},
 		Token:    token,
+		Role:     "student",
 	})
+
+	// 添加{key: jti, val: role}到redis
+	middlewares.RC.Set(context.TODO(), jti, "student", 7*24*time.Hour).Result()
 }
 
 func UpdateUser(c *gin.Context) {
-	// 管理员无权修改
+	// 修改学生信息, 管理员跳到另一个handle
 	role := c.MustGet("role")
 	if role == "admin" {
-		c.JSON(http.StatusForbidden, models.Response{Success: false})
 		return
 	}
 
@@ -130,7 +164,8 @@ func UpdateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.Response{Success: false})
 		return
 	}
-	studentID := c.MustGet("id").(uint)
+	id, _ := strconv.Atoi(c.MustGet("id").(string))
+	studentID := uint(id)
 
 	user, err := db.FindUserByStudentID(studentID)
 	// 数据库错误
@@ -165,21 +200,36 @@ func UpdateUser(c *gin.Context) {
 		hasChangedPassword = true
 	}
 
+	// TODO 需要判断具体的错误
 	if err := db.UpdateUser(user); err != nil {
-		c.JSON(http.StatusInternalServerError, models.Response{Success: false})
+		hasChangedPassword = false
+		c.JSON(http.StatusInternalServerError, models.Response{Success: false, Message: "更新失败"})
 		return
 	}
+
+	// 修改了密码
 	if hasChangedPassword {
-		// 生成新token
-		token, issuedAt, _ := utils.GenerateToken(studentID, "student")
-		c.Set("changed", true)
-		c.Set("issuedAt", issuedAt)
+		token, jti, _ := utils.GenerateToken(string(studentID), "student")
+		// 确保jti不重复
+		for {
+			if _, err := middlewares.RC.Get(context.TODO(), jti).Result(); err != nil {
+				break
+			}
+			token, jti, _ = utils.GenerateToken(string(studentID), "student")
+		}
+
 		c.JSON(http.StatusOK, models.TokenResponse{
-			Response: models.Response{Success: true},
+			Response: models.Response{Success: true, Message: "更新成功"},
 			Token:    token,
+			Role:     "student",
 		})
+
+		// 添加{key: jti, val: role}到redis
+		middlewares.RC.Set(context.TODO(), jti, "student", 7*24*time.Hour).Result()
+		c.Set("changed", true)
+		return
 	}
-	c.JSON(http.StatusOK, models.Response{Success: true})
+	c.JSON(http.StatusOK, models.Response{Success: true, Message: "更新成功"})
 }
 
 func DeleteUser(c *gin.Context) {
@@ -187,7 +237,8 @@ func DeleteUser(c *gin.Context) {
 
 	role := c.MustGet("role")
 	if role == "student" {
-		studentID = c.MustGet("id").(uint)
+		id, _ := strconv.Atoi(c.MustGet("id").(string))
+		studentID := uint(id)
 
 		// 需要输入密码删除
 		var request models.DeleteRequest
@@ -217,6 +268,13 @@ func DeleteUser(c *gin.Context) {
 		}
 
 	} else if role == "admin" {
+		if c.Param("id") == "me" {
+			c.JSON(http.StatusForbidden, models.Response{
+				Success: false,
+				Message: "不允许删除管理员账户",
+			})
+			return
+		}
 		idParam, _ := strconv.Atoi(c.Param("id"))
 		studentID = uint(idParam)
 	}
@@ -226,44 +284,82 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 
-	c.Set("changed", true)
+	// 管理员删除账户不会拉黑token
+	if role != "admin" {
+		c.Set("changed", true)
+	}
+
 	c.JSON(http.StatusOK, models.Response{Success: true})
 }
 
 func GetUser(c *gin.Context) {
-	c.Header("Access-Control-Allow-Origin", "*")
-	c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
-	c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-	c.Header("Access-Control-Expose-Headers", "Content-Length")
-	c.Header("Access-Control-Allow-Credentials", "true")
-
 	var studentID uint
 	role := c.MustGet("role")
 	if role == "student" {
-		studentID = c.MustGet("id").(uint)
+		if c.Param("id") != "me" {
+			c.JSON(http.StatusNotFound, models.Response{Success: false, Message: "请指定查询对象, me 或者 学生ID"})
+			return
+		}
+		id, _ := strconv.Atoi(c.MustGet("id").(string))
+		studentID = uint(id)
+		user, err := db.FindUserByStudentID(studentID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, models.Response{Success: false, Message: "不存在该学生"})
+			return
+		}
+
+		c.JSON(http.StatusOK, models.GetUserResponse{
+			Response: models.Response{Success: true},
+			User:     *user,
+		})
+		return
 	} else if role == "admin" {
-		idParam, _ := strconv.Atoi(c.Param("id"))
-		studentID = uint(idParam)
-		// 查询用户列表
-		if idParam == 0 {
+		if c.Param("id") == "me" {
+			// 查询管理员个人信息
+			admin, err := db.FindAdminByName(c.MustGet("id").(string))
+			if err != nil {
+				c.JSON(http.StatusNotFound, models.Response{Success: false, Message: "不存在该管理员"})
+				return
+			}
+			c.JSON(http.StatusOK, models.GetAdminResponse{
+				Response: models.Response{Success: true},
+				Role:     "admin",
+				Admin:    *admin,
+			})
+			return
+		} else if c.Param("id") == "all" {
+			// 查询用户列表
 			users := db.FindAllUser()
+			if len(*users) == 0 {
+				// 未找到学生
+				c.JSON(http.StatusOK, models.GetUserListResponse{
+					Response: models.Response{Success: true, Message: "学生名单为空"},
+					UserList: nil,
+				})
+				return
+
+			}
 			c.JSON(http.StatusOK, models.GetUserListResponse{
 				Response: models.Response{Success: true},
 				UserList: *users,
 			})
 			return
+		} else {
+			// 查询指定学生
+			idParam, _ := strconv.Atoi(c.Param("id"))
+			studentID = uint(idParam)
+			user, err := db.FindUserByStudentID(studentID)
+			if err != nil {
+				c.JSON(http.StatusNotFound, models.Response{Success: false, Message: "不存在该学生"})
+				return
+			}
+
+			c.JSON(http.StatusOK, models.GetUserResponse{
+				Response: models.Response{Success: true},
+				User:     *user,
+			})
+			return
 		}
 	}
-
-	// 查询单个用户
-	user, err := db.FindUserByStudentID(studentID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, models.Response{Success: false})
-		return
-	}
-
-	c.JSON(http.StatusOK, models.GetUserResponse{
-		Response: models.Response{Success: true},
-		User:     *user,
-	})
 }
+*/

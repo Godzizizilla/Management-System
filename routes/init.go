@@ -7,6 +7,7 @@ import (
 
 func InitRouters() *gin.Engine {
 	r := gin.Default()
+	middlewares.SetupRedis()
 	middlewares.ServeCors(r)
 	middlewares.ServeSwaggerUI(r)
 	SetupRouters(r)
